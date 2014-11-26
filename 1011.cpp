@@ -4,76 +4,97 @@
 	> Mail: 
 	> Created Time: 2014年11月16日 星期日 20时51分10秒
  ************************************************************************/
-#include<iostream>
+#include <iostream>
+#include <algorithm>
 using namespace std;
 
-int lenOfEach[65];
-int reachSum[4096] = {0};
+int n;
 
-void dfs(int *a, int n, int curIdx, int curSum)
+bool dfs(int *a, int *used, int targetSum, int curIdx, int curSum, int nUsed)
 {
-    if (curIdx == n)
-        return;
-    reachSum[curSum + a[curIdx]] = 1;
-    dfs(a, n, curIdx + 1, curSum + a[curIdx]);
-    dfs(a, n, curIdx + 1, curSum);
+    if (nUsed == n)
+        return true;
+
+    int skip = -1;
+
+    for (int i = curIdx; i < n; i++)
+    {
+        if (used[i] || a[i] == skip)
+            continue;
+
+        used[i] = 1;
+
+        if (curSum + a[i] < targetSum)
+        {
+            bool flag = dfs(a, used, targetSum, i + 1, curSum + a[i], nUsed + 1);
+            if (flag)
+                return true; 
+            else
+                skip = a[i];
+        }
+        else if (curSum + a[i] == targetSum)
+        {
+            bool flag = dfs(a, used, targetSum, 0, 0, nUsed + 1);
+            if (flag)
+                return true; 
+            else
+                skip = a[i];
+        }
+
+        used[i] = 0;
+
+        if (curSum == 0)
+            break;
+    }
+
+    return false;
 }
 
 
-bool check(int eachLen, int sum)
+int cmp(const void *a, const void *b)
 {
-    if (sum % eachLen != 0)
-        return false;
-    int cnt = sum / eachLen;
-    for (int i = 1; i <= cnt; i++)
-    {
-        if (!reachSum[eachLen * i])
-            return false;
-    }
-    return true;
+    return *(int *)b - *(int *)a; // TLE if change '-' to '>', weired......:(
 }
 
 int main()
 {
     while(1)
     {
-        int n;
-        int a[50];
-        int sum = 0;
-        int max = -1;
-
         cin >> n;
         if (n == 0)
             break;
+        int *a = new int[n];
+        int *used = new int[n];
+        int sum = 0;
+        int res;
+
         for (int i = 0; i < n; i++)
         {
             cin >> a[i];
-            if (a[i] > max)
-                max = a[i];
             sum += a[i];
-            lenOfEach[i + 1] = -1;
+            used[i] = 0;
         }
 
-        for (int i = 1; i <= n; i++)
+        //sort(a, a + n, cmp);
+        qsort(a, n, sizeof(a), cmp);  
+
+        bool found = false;
+        for (res = a[0]; res <= sum - res; res++)
         {
-            if (sum % i == 0)
+            if (!(sum % res) && dfs(a, used, res, 0, 0, 0))
             {
-                lenOfEach[i] = sum / i;
+                cout << res << endl;
+                found = true;
+                break;
             }
         }
         
-        dfs(a, n, 0, 0);
-
-        for (int i = n; i >= 1; i--)
-        {            
-            if(lenOfEach[i] != -1 && lenOfEach[i] >= max && check(lenOfEach[i], sum))
-            {
-                cout << lenOfEach[i] << endl;
-                break;
-            }
-            
+        if (!found)
+        {
+            cout << sum << endl; 
         }
+        delete a;
+        delete used;
     }
-
     return 0;
 }
